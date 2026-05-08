@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eisenstein WASM Demo</title>
+<style>
+body{background:#060a0f;color:#ccd;font-family:'SF Mono',monospace;margin:0;padding:20px;min-height:100vh}
+h1{color:#00ff88;font-size:1.2em}
+pre{background:#0a1218;padding:10px;border-radius:5px;font-size:.8em;overflow-x:auto}
+.ok{color:#00ff88}.bad{color:#ff4444}.dim{color:#556}
+canvas{background:#050c14;border-radius:8px;display:block;margin:10px 0}
+button{background:#222;color:#ccd;border:1px solid #333;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<h1>⬡ Eisenstein WASM</h1>
+<p class="dim">Drift comparison: exact integer vs floating-point after N rotations</p>
+
+<div style="margin:10px 0">
+<button onclick="runDrift(1000)">1K</button>
+<button onclick="runDrift(10000)">10K</button>
+<button onclick="runDrift(100000)">100K</button>
+<button onclick="runDrift(1000000)">1M</button>
+</div>
+
+<pre id="result">Click a button to run the drift test.</pre>
+
+<canvas id="c" width="500" height="300"></canvas>
+
+<script type="module">
+const result = document.getElementById('result');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let wasm;
+try {
+    const mod = await import('./eisenstein_wasm.js');
+    await mod.default();
+    wasm = mod;
+    result.textContent = 'WASM loaded. Ready.';
+} catch(e) {
+    result.textContent = 'WASM not available: ' + e.message;
+    result.className = 'bad';
+}
+
+function drawDisk(radius) {
+    ctx.clearRect(0, 0, 500, 300);
+    const cx = 250, cy = 150, scale = 180 / radius;
+
+    // Draw hex grid
+    for (let a = -radius; a <= radius; a++) {
+        for (let b = -radius; b <= radius; b++) {
+            const n = a*a - a*b + b*b;
+            if (n > radius*radius) continue;
+            const x = cx + (a * 0.5 + b) * scale;
+            const y = cy + (a * 0.866) * scale;
+            const opacity = 0.2 + 0.8 * (1 - n / (radius*radius));
+            const r = 2 + 3 * (1 - n / (radius*radius));
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = n === 0 ? '#00ff88' : `rgba(0,255,136,${opacity})`;
+            ctx.fill();
+        }
+    }
+
+    // Draw D6 axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 6; i++) {
+        const angle = i * Math.PI / 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * 180, cy + Math.sin(angle) * 180);
+        ctx.stroke();
+    }
+}
+
+function runDrift(n) {
+    if (!wasm) return;
+    const r = wasm.drift_test(n);
+    result.innerHTML = `After <strong>${r.iterations.toLocaleString()}</strong> 60° rotations:<br><br>
+    <span class="ok">E12 drift: <strong>${r.exact_drift}</strong></span><br>
+    <span class="bad">Float drift: <strong>${r.float_drift.toExponential(4)}</strong></span><br>
+    <span class="dim">E12 never leaves the integer lattice. Floats accumulate error every step.</span>`;
+    drawDisk(10);
+}
+
+// Initial draw
+drawDisk(10);
+</script>
+</body>
+</html>

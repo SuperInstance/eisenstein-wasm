@@ -1,0 +1,9 @@
+{
+  "name": "@superinstance/eisenstein-wasm",
+  "version": "0.1.0",
+  "description": "Eisenstein integer arithmetic for WebAssembly — exact hex grid operations in the browser",
+  "main": "eisenstein_wasm.js",
+  "types": "eisenstein_wasm.d.ts",
+  "files": ["*.wasm", "*.js", "*.ts"],
+  "license": "MIT OR Apache-2.0"
+}
