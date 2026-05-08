@@ -1,45 +1,39 @@
 # eisenstein-wasm
 
-[![npm](https://img.shields.io/npm/v/eisenstein-wasm.svg)](https://www.npmjs.com/package/eisenstein-wasm)
+**Same exact Eisenstein integer arithmetic, compiled for the browser and Node.js.**
 
-Same exact hex integer arithmetic as [eisenstein](https://github.com/SuperInstance/eisenstein), compiled to WebAssembly for browsers and Node.js.
+WASM package that wraps the Rust [eisenstein](https://github.com/SuperInstance/eisenstein) crate. Every operation — norm, rotation, hex distance, disk iteration — runs in WebAssembly with integer arithmetic. No floats, no drift, no rounding. The WASM binary is ~15KB gzipped.
 
-## Install
+## Quick Start
+
+```javascript
+import init, { E12Wasm, hex_disk, drift_test } from 'eisenstein-wasm';
+
+await init();
+
+const a = E12Wasm.new(3, 1);
+const b = E12Wasm.new(1, 2);
+
+a.add(b);           // exact
+a.mul(b);           // exact
+a.rotate_60();      // stays on the lattice
+
+console.log(a.norm());  // 7 — exact integer
+
+// 10,000 rotations, zero drift
+const result = drift_test(10000);
+console.log(result.float_drift);  // ~2e-12 (float version drifts)
+```
+
+Install:
 
 ```bash
-npm install eisenstein-wasm
+npm install @superinstance/eisenstein-wasm
 ```
 
-## Usage
+## Why WASM?
 
-```js
-import { E12 } from "eisenstein-wasm";
-
-const a = new E12(1, 0);
-const b = new E12(0, 1);
-console.log(a.add(b).toString()); // "(1, 1)"
-```
-
-See **[npm-package/README.md](npm-package/README.md)** for full API docs.
-
-## Eisenstein Ecosystem
-
-Part of the **[Eisenstein hex integer ecosystem](https://github.com/SuperInstance/eisenstein)** — exact hex arithmetic from microcontrollers to browsers to formal verification.
-
-| Project | Description |
-|---------|-------------|
-| **[eisenstein](https://github.com/SuperInstance/eisenstein)** | Core Rust crate — exact hex arithmetic, zero deps |
-| **[eisenstein-c](https://github.com/SuperInstance/eisenstein-c)** | Same math, for microcontrollers. 1KB `.text`. |
-| **[eisenstein-wasm](https://github.com/SuperInstance/eisenstein-wasm)** | Same math, for browsers and Node.js |
-| **[eisenstein-bench](https://github.com/SuperInstance/eisenstein-bench)** | Benchmark all implementations side-by-side |
-| **[eisenstein-fuzz](https://github.com/SuperInstance/eisenstein-fuzz)** | Property-based fuzzing across the ecosystem |
-| **[eisenstein-do178c](https://github.com/SuperInstance/eisenstein-do178c)** | DO-178C formally verified for safety-critical systems |
-| **[arm-neon-eisenstein-bench](https://github.com/SuperInstance/arm-neon-eisenstein-bench)** | 4× parallel hex math on ARM NEON |
-| **[hexgrid-gen](https://github.com/SuperInstance/hexgrid-gen)** | Code generation for any language in the ecosystem |
-| **[constraint-theory-core](https://github.com/SuperInstance/constraint-theory-core)** | Production constraint framework built on Eisenstein math |
-| **[flux-lucid](https://github.com/SuperInstance/flux-lucid)** | Unified intent-directed ecosystem orchestrator |
-
-**Next →** Benchmark it: **[eisenstein-bench](https://github.com/SuperInstance/eisenstein-bench)**
+Floating-point hex coordinates in JavaScript drift after repeated operations — JS has no control over FPU rounding modes across browsers. Eisenstein integers don't have that problem because the arithmetic is integer-only. The WASM binary gives you exact, deterministic hex math that behaves identically on every browser, every device, every time.
 
 ## License
 
